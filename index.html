@@ -80,9 +80,18 @@
   }
   .num.reservado{
     background:#eef1ea;color:var(--cinza-reserv);
-    text-decoration:line-through;cursor:not-allowed;
+    cursor:not-allowed;
     box-shadow:inset 0 0 0 1px #dde3da;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:1px;
   }
+  .num.reservado .numero{text-decoration:line-through}
+  .num .quem{
+    display:none;
+    font-size:8.5px;font-weight:600;line-height:1.1;
+    max-width:94%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .num.reservado .quem{display:block;color:var(--cinza-reserv)}
 
   .tamanhos{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:20px 0 4px}
   .tam{
@@ -200,19 +209,24 @@
   const lista = document.getElementById('sel-lista');
   const btnWa = document.getElementById('btn-wa');
 
-  const reservados = new Set((window.RIFA && window.RIFA.reservados) || []);
+  const raw = (window.RIFA && window.RIFA.reservados) || [];
+  // aceita lista simples [1,2,3] ou com nomes {"1": "Nome", ...}
+  const reservados = new Map();
+  if (Array.isArray(raw)) raw.forEach(n => reservados.set(Number(n), ''));
+  else Object.entries(raw).forEach(([n, nome]) => reservados.set(Number(n), nome || ''));
   const selecionados = new Set();
 
   for (let n = 1; n <= TOTAL; n++) {
     const b = document.createElement('button');
     b.className = 'num';
-    b.textContent = n;
-    b.dataset.n = n;
     if (reservados.has(n)) {
+      const nome = reservados.get(n);
       b.classList.add('reservado');
       b.disabled = true;
-      b.title = 'Já reservado';
+      b.title = nome ? 'Já reservado por ' + nome : 'Já reservado';
+      b.innerHTML = '<span class="numero">' + n + '</span>' + (nome ? '<span class="quem">' + nome + '</span>' : '');
     } else {
+      b.innerHTML = '<span class="numero">' + n + '</span>';
       b.addEventListener('click', () => {
         if (selecionados.has(n)) selecionados.delete(n); else selecionados.add(n);
         b.classList.toggle('sel', selecionados.has(n));
