@@ -71,6 +71,8 @@
     background:#fff;border-radius:12px;
     padding:10px 0;
     transition:transform .08s ease, background .15s ease, color .15s ease, box-shadow .15s;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:1px;
   }
   .num:hover{background:#f1f7e4}
   .num:active{transform:scale(.93)}
@@ -82,8 +84,6 @@
     background:#eef1ea;color:var(--cinza-reserv);
     cursor:not-allowed;
     box-shadow:inset 0 0 0 1px #dde3da;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;
-    gap:1px;
     position:relative;
   }
   .num.reservado .numero{text-decoration:line-through}
@@ -136,7 +136,6 @@
     text-align:center;margin:18px 0 0;color:var(--verde-mais-escuro);font-weight:700;
   }
 
-  /* barra inferior de reserva */
   .barra{
     position:fixed;left:0;right:0;bottom:0;z-index:5;
     padding:12px 14px calc(12px + env(safe-area-inset-bottom));
@@ -157,6 +156,44 @@
   .btn-wa:hover{filter:brightness(1.05)}
   .legenda{
     text-align:center;font-size:12.5px;color:#5b7442;font-weight:600;margin-top:14px;
+  }
+
+  /* modal de reserva */
+  .modal-bg{
+    position:fixed;inset:0;z-index:20;
+    background:rgba(20,35,10,.45);backdrop-filter:blur(3px);
+    display:none;align-items:center;justify-content:center;padding:18px;
+  }
+  .modal-bg.on{display:flex}
+  .modal{
+    background:#fff;border-radius:20px;padding:22px 20px;width:100%;max-width:400px;
+    box-shadow:0 16px 40px rgba(0,0,0,.25);
+  }
+  .modal h2{margin:0 0 6px;color:var(--verde-mais-escuro);font-size:20px}
+  .modal .sub{font-size:13px;color:#5b7442;margin-bottom:14px}
+  .modal label{display:block;font-weight:700;font-size:13px;color:var(--verde-mais-escuro);margin:10px 0 4px}
+  .modal input{
+    width:100%;padding:11px 12px;border:1.5px solid #d7e3c6;border-radius:12px;
+    font-family:'Quicksand',sans-serif;font-size:15px;outline:none;
+  }
+  .modal input:focus{border-color:var(--verde-escuro)}
+  .modal-acoes{display:flex;gap:10px;margin-top:16px}
+  .btn-cancelar{flex:1;padding:11px;border:0;border-radius:12px;background:#eef1ea;color:#5b7442;font-weight:700;cursor:pointer}
+  .btn-confirmar{flex:1;padding:11px;border:0;border-radius:12px;background:var(--verde-escuro);color:#fff;font-weight:700;cursor:pointer}
+  .toast{
+    position:fixed;top:18px;left:50%;transform:translateX(-50%) translateY(-120%);
+    background:var(--verde-escuro);color:#fff;padding:12px 18px;border-radius:12px;
+    font-weight:700;box-shadow:0 8px 22px rgba(0,0,0,.2);
+    transition:transform .25s;z-index:30;
+  }
+  .toast.on{transform:translateX(-50%) translateY(0)}
+
+  .admin-btn{
+    display:block;margin:18px auto 0;background:transparent;border:0;
+    color:#9aa793;font-size:11px;cursor:pointer;text-decoration:underline;
+  }
+  .status-db{
+    text-align:center;font-size:12px;color:#5b7442;font-weight:600;margin-top:8px;
   }
 </style>
 </head>
@@ -199,64 +236,215 @@
   </section>
 
   <p class="data">🎉 Sorteio dia 13/11/2026</p>
-  <p class="legenda">Toque nos números que você quer e envie a reserva pelo WhatsApp 💚</p>
+  <p class="status-db" id="status-db">Conectando ao banco de dados…</p>
+  <p class="legenda">Toque nos números livres para reservar — todos veem na hora 💚</p>
+
+  <button class="admin-btn" id="btn-admin">liberar número (papais)</button>
 </main>
 
+<!-- barra de reserva -->
 <div class="barra" id="barra">
   <div class="barra-int">
     <span class="sel-lista" id="sel-lista"></span>
-    <a class="btn-wa" id="btn-wa" href="#" target="_blank" rel="noopener">
+    <button class="btn-wa" id="btn-wa">
       <svg width="20" height="20" viewBox="0 0 32 32" fill="#fff"><path d="M16 3C9.4 3 4 8.3 4 14.9c0 2.6.8 5 2.3 7L4.6 29l7.3-1.9c1.9 1 4 1.6 6.1 1.6 6.6 0 12-5.3 12-11.9S22.6 3 16 3zm6.9 16.4c-.3.9-1.7 1.7-2.4 1.8-.6.1-1.4.1-2.2-.1-.5-.2-1.2-.4-2-.8-3.5-1.5-5.8-5-6-5.3-.1-.2-1-1.3-1-2.5s.6-1.8.9-2c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5.2.6.8 2 .9 2.2.1.2.1.4 0 .6-.1.2-.2.4-.3.6l-.4.5c-.1.1-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.4 2.4 1.5.3.1.5.1.7-.1.2-.2.8-.9 1-1.2.2-.3.4-.2.7-.1.3.1 1.7.8 2 1 .3.2.5.3.6.4.1.2.1.8-.2 1.6z"/></svg>
       Reservar pelo WhatsApp
-    </a>
+    </button>
   </div>
 </div>
 
+<!-- modal de reserva -->
+<div class="modal-bg" id="modal-bg">
+  <div class="modal">
+    <h2 id="modal-titulo">Reservar número</h2>
+    <p class="sub">Preencha e confirme — o número fica marcado para todo mundo na hora.</p>
+    <label>Seu nome</label>
+    <input id="modal-nome" type="text" placeholder="Ex: Maria Silva" autocomplete="name">
+    <label>WhatsApp (opcional)</label>
+    <input id="modal-fone" type="tel" placeholder="Ex: 32998632044" autocomplete="tel">
+    <div class="modal-acoes">
+      <button class="btn-cancelar" id="modal-cancelar">Cancelar</button>
+      <button class="btn-confirmar" id="modal-confirmar">Reservar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
 <script src="dados.js"></script>
+<script src="firebase-config.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script>
   const TOTAL = 100;
   const grade = document.getElementById('grade');
   const barra = document.getElementById('barra');
   const lista = document.getElementById('sel-lista');
   const btnWa = document.getElementById('btn-wa');
+  const statusDb = document.getElementById('status-db');
 
-  const raw = (window.RIFA && window.RIFA.reservados) || [];
-  // aceita lista simples [1,2,3] ou com nomes {"1": "Nome", ...}
+  // map numero -> nome (string) | null se livre
   const reservados = new Map();
-  if (Array.isArray(raw)) raw.forEach(n => reservados.set(Number(n), ''));
-  else Object.entries(raw).forEach(([n, nome]) => reservados.set(Number(n), nome || ''));
   const selecionados = new Set();
+  let numeroModal = null;
+  let seeded = false;
 
+  // monta a grade uma vez
+  const celulas = [];
   for (let n = 1; n <= TOTAL; n++) {
     const b = document.createElement('button');
     b.className = 'num';
-    if (reservados.has(n)) {
-      const nome = reservados.get(n);
-      b.classList.add('reservado');
-      b.disabled = true;
-      b.title = nome ? 'Já reservado por ' + nome : 'Já reservado';
-      b.innerHTML = '<span class="numero">' + n + '</span>' + (nome ? '<span class="quem">' + nome + '</span>' : '');
-    } else {
-      b.innerHTML = '<span class="numero">' + n + '</span>';
-      b.addEventListener('click', () => {
-        if (selecionados.has(n)) selecionados.delete(n); else selecionados.add(n);
-        b.classList.toggle('sel', selecionados.has(n));
-        atualizar();
-      });
-    }
+    b.dataset.n = n;
+    b.innerHTML = '<span class="numero">' + n + '</span><span class="quem"></span>';
+    b.addEventListener('click', () => clicar(n));
     grade.appendChild(b);
+    celulas.push(b);
   }
 
-  function ordenar(a){return [...a].sort((x,y)=>x-y)}
-  function atualizar(){
+  function pintar(){
+    celulas.forEach(b => {
+      const n = Number(b.dataset.n);
+      const nome = reservados.get(n);
+      const reservado = nome !== undefined && nome !== null && String(nome).trim() !== '';
+      b.classList.toggle('reservado', reservado);
+      b.disabled = reservado;
+      b.title = reservado ? ('Já reservado por ' + nome) : 'Livre — toque para selecionar';
+      const quem = b.querySelector('.quem');
+      if (quem) quem.textContent = reservado ? nome : '';
+    });
+  }
+
+  function toast(msg){
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('on');
+    clearTimeout(window.__toastT); window.__toastT = setTimeout(()=>t.classList.remove('on'), 2600);
+  }
+
+  function atualizarBarra(){
     if (selecionados.size === 0) { barra.classList.remove('on'); return; }
-    const nums = ordenar(selecionados);
+    const nums = [...selecionados].sort((a,b)=>a-b);
     lista.textContent = nums.length === 1 ? 'Número ' + nums[0] : nums.length + ' números: ' + nums.join(', ');
     const msg = 'Olá! Quero reservar ' + (nums.length === 1 ? 'o número ' + nums[0] : 'os números ' + nums.join(', ')) +
                 ' da Chá rifa do Danilo 🍼 (sorteio 13/11/2026)';
     const fone = (window.RIFA && window.RIFA.whatsapp) || '';
-    btnWa.href = 'https://wa.me/' + fone + '?text=' + encodeURIComponent(msg);
+    btnWa.onclick = () => { window.open('https://wa.me/' + fone + '?text=' + encodeURIComponent(msg), '_blank'); };
     barra.classList.add('on');
+  }
+
+  function clicar(n){
+    if (reservados.has(n) && String(reservados.get(n)).trim() !== '') {
+      toast('Número ' + n + ' já foi reservado por ' + reservados.get(n) + ' 💚');
+      return;
+    }
+    if (selecionados.has(n)) selecionados.delete(n); else selecionados.add(n);
+    const b = celulas[n-1];
+    b.classList.toggle('sel', selecionados.has(n));
+    atualizarBarra();
+  }
+
+  // ---------- Firebase ----------
+  let db = null, refR = null, dbReady = false;
+  const isPlaceholder = !window.FIREBASE_CONFIG || !window.FIREBASE_CONFIG.apiKey ||
+    String(window.FIREBASE_CONFIG.apiKey).indexOf('COLE_AQUI') !== -1;
+
+  function usarDadosEstaticos(){
+    const raw = (window.RIFA && window.RIFA.reservados) || {};
+    const seed = Array.isArray(raw) ? raw.reduce((a,n)=>{a[n]='';return a;}, {}) : raw;
+    reservados.clear();
+    Object.entries(seed).forEach(([n,nome]) => reservados.set(Number(n), nome || ''));
+    pintar();
+    statusDb.textContent = 'Modo manual: números da lista em dados.js. Configure o firebase-config.js para marcação automática em tempo real.';
+  }
+
+  if (isPlaceholder) {
+    usarDadosEstaticos();
+  } else try {
+    firebase.initializeApp(window.FIREBASE_CONFIG);
+    db = firebase.database();
+    refR = db.ref('reservados');
+    dbReady = true;
+
+    refR.on('value', (snap) => {
+      const data = snap.val() || {};
+      // semente inicial: se o banco estiver vazio, carrega a lista do dados.js
+      if (Object.keys(data).length === 0 && !seeded && window.RIFA && window.RIFA.reservados) {
+        seeded = true;
+        const seed = window.RIFA.reservados;
+        // aceita array ou objeto
+        if (Array.isArray(seed)) seed.forEach(n => refR.child(n).set(''));
+        else Object.entries(seed).forEach(([n,nome]) => refR.child(n).set(nome || ''));
+        statusDb.textContent = 'Carregando números…';
+        return;
+      }
+      seeded = true;
+      reservados.clear();
+      Object.entries(data).forEach(([n, nome]) => reservados.set(Number(n), nome || ''));
+      pintar();
+      const totalRes = reservados.size;
+      statusDb.textContent = totalRes === 0 ? 'Todos os 100 números estão livres 💚' :
+        (totalRes + ' de 100 números já reservados — atualiza em tempo real');
+    }, (err) => {
+      console.error(err);
+      usarDadosEstaticos();
+    });
+
+    // reserva: abre modal
+    btnWa.addEventListener('click', () => {
+      if (selecionados.size === 0) return;
+      const nums = [...selecionados].sort((a,b)=>a-b);
+      numeroModal = nums;
+      document.getElementById('modal-titulo').textContent =
+        nums.length === 1 ? 'Reservar número ' + nums[0] : 'Reservar números ' + nums.join(', ');
+      document.getElementById('modal-nome').value = '';
+      document.getElementById('modal-fone').value = '';
+      document.getElementById('modal-bg').classList.add('on');
+      setTimeout(()=>document.getElementById('modal-nome').focus(), 50);
+    });
+
+    document.getElementById('modal-cancelar').addEventListener('click', () => {
+      document.getElementById('modal-bg').classList.remove('on');
+    });
+    document.getElementById('modal-confirmar').addEventListener('click', async () => {
+      const nome = document.getElementById('modal-nome').value.trim();
+      if (!nome) { toast('Digite seu nome para reservar 💚'); return; }
+      const fone = document.getElementById('modal-fone').value.trim();
+      const nums = numeroModal || [];
+      try {
+        if (dbReady && refR) {
+          await Promise.all(nums.map(n => refR.child(n).set(nome)));
+        }
+        // avisa os papais pelo WhatsApp
+        const msg = 'Olá! Quero reservar ' + (nums.length === 1 ? 'o número ' + nums[0] : 'os números ' + nums.join(', ')) +
+                    ' da Chá rifa do Danilo 🍼 (sorteio 13/11/2026)\nNome: ' + nome +
+                    (fone ? '\nWhatsApp: ' + fone : '');
+        const fonePapais = (window.RIFA && window.RIFA.whatsapp) || '';
+        window.open('https://wa.me/' + fonePapais + '?text=' + encodeURIComponent(msg), '_blank');
+        nums.forEach(n => selecionados.delete(n));
+        celulas.forEach(b => { if (nums.includes(Number(b.dataset.n))) b.classList.remove('sel'); });
+        atualizarBarra();
+        document.getElementById('modal-bg').classList.remove('on');
+        toast(dbReady ? 'Reservado! 💚' : 'Mensagem enviada — os papais vão confirmar e marcar. 💚');
+      } catch (e) {
+        toast('Erro ao reservar. Tente de novo.');
+        console.error(e);
+      }
+    });
+
+    // admin: liberar número (papais)
+    document.getElementById('btn-admin').addEventListener('click', async () => {
+      if (!dbReady || !refR) { toast('Configure o Firebase primeiro (firebase-config.js)'); return; }
+      const senha = prompt('Senha dos papais:');
+      if (senha !== 'danilo2026') { toast('Senha incorreta'); return; }
+      const n = prompt('Número a liberar (1-100):');
+      const num = Number(n);
+      if (!num || num < 1 || num > 100) { toast('Número inválido'); return; }
+      await refR.child(num).remove();
+      toast('Número ' + num + ' liberado 💚');
+    });
+
+  } catch (e) {
+    console.error(e);
+    statusDb.textContent = '⚠️ Configure o firebase-config.js (veja instruções) para ativar a marcação automática.';
   }
 </script>
 </body>
