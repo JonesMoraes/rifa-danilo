@@ -21,6 +21,7 @@ window.RIFA = {
     "13": "J Marcos",
     "14": "Rosa",
     "15": "Tia Ariene",
+    "18": "Geraldo",
     "22": "Julio",
     "24": "Igor Anão",
     "26": "Fabiana (tia Ana)",
@@ -28,9 +29,10 @@ window.RIFA = {
     "31": "Vanilza",
     "33": "Chaiane",
     "34": "Andreia (tia Ana)",
+    "45": "Tia Tereza",
     "50": "Vera vó",
     "60": "Telmar",
-    "70": "Bruna Mendes",
+    "70": "Natália Vó",
     "77": "Evelyn"
   }
 };
